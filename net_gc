@@ -1,0 +1,94 @@
+# .NET GC(Environment Variables) 설정 정리
+
+이 문서는 .NET Core 3.1 ~ .NET 8까지 사용 가능한 GC(Environment Variables) 환경변수와 Kubernetes 환경에서 메모리 최적화 방법을 정리한 것입니다.
+
+---
+
+## 🧠 GC 제어용 주요 환경변수
+
+| 환경변수                              | 설명                                                                                     | 기본값         |
+|----------------------------------------|------------------------------------------------------------------------------------------|----------------|
+| **DOTNET_GCHeapHardLimit**             | GC 힙의 최대 크기(바이트) 설정. 초과 시 OutOfMemoryException 발생                         | 제한 없음      |
+| **DOTNET_GCHeapHardLimitPercent**      | 전체 시스템 메모리의 퍼센트로 힙 크기 제한                                               | 제한 없음      |
+| **DOTNET_GCHeapAffinitizeMask**        | 특정 CPU 코어에 GC 스레드를 고정                                                         | 자동           |
+| **DOTNET_GCHeapCount**                 | GC 힙 세그먼트 수 지정 (Server GC에서만 사용)                                             | 자동           |
+| **DOTNET_GCServer**                    | `1`: Server GC 사용, `0`: Workstation GC 사용                                            | 서버: 1        |
+| **DOTNET_GCConcurrent**                | `1`: Concurrent GC 사용, `0`: 끔                                                        | 1              |
+| **DOTNET_GCStress**                    | 스트레스 모드: 모든 할당마다 GC 강제 실행. 값: 0x1~0xF                                   | 비활성화       |
+| **DOTNET_GCHighMemoryPercent**         | 고메모리 시스템으로 판단할 비율 기준(%)                                                  | 75             |
+| **DOTNET_GCHeapVerify**                | GC 힙 검증 모드 활성화. 성능 저하 있음                                                   | 0              |
+| **DOTNET_GCNoAffinitize**              | `1`: GC 스레드 CPU 고정 끄기                                                             | 0              |
+| **DOTNET_GCAllowVeryLargeObjects**     | `1`: 2GB 이상 배열 허용                                                                  | 0              |
+
+---
+
+## 🔥 고급/디버깅용 환경변수
+
+| 환경변수                              | 설명                                                                                     | 기본값         |
+|----------------------------------------|------------------------------------------------------------------------------------------|----------------|
+| **DOTNET_GCRegions**                   | `1`: Large Object Heap(LOH) 세분화                                                       | 0              |
+| **DOTNET_GCHoardVM**                   | 가상 메모리 예약 패턴 변경                                                               | 0              |
+| **DOTNET_GCTrimCommit**                | GC가 사용 후 메모리 반환 여부 제어                                                        | 1              |
+| **DOTNET_GCLatencyLevel**              | GC 지연 레벨 설정 (Batch/Interactive/SustainedLowLatency 등)                              | Interactive    |
+| **DOTNET_GCHeapHardLimitSOH**          | Small Object Heap(SOH) 별도 힙 최대값(바이트) 설정                                        | 제한 없음      |
+| **DOTNET_GCHeapHardLimitLOH**          | Large Object Heap(LOH) 별도 힙 최대값(바이트) 설정                                        | 제한 없음      |
+
+---
+
+## 🗂️ Prefix 호환성
+
+- `DOTNET_` prefix와 `COMPlus_` prefix 모두 사용 가능
+    - ✅ `DOTNET_`: Linux/macOS/Docker 권장
+    - ✅ `COMPlus_`: Windows(.exe 직접 실행 시)와 동일
+
+예)
+```bash
+# 동일한 효과
+export DOTNET_GCHeapHardLimit=1073741824
+export COMPlus_GCHeapHardLimit=1073741824
+
+
+
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dotnet-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dotnet-app
+  template:
+    metadata:
+      labels:
+        app: dotnet-app
+    spec:
+      containers:
+        - name: dotnet-app
+          image: myregistry/dotnet-app:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            limits:
+              memory: "3Gi"
+              cpu: "1"
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+          env:
+            - name: DOTNET_GCHeapHardLimitPercent
+              value: "70"
+            - name: DOTNET_GCServer
+              value: "1" # Server GC 사용
+
+```
+⚠️ 참고
+✅ DOTNET_GCHeapHardLimitPercent
+
+컨테이너 메모리 리미트(3GiB)의 70% = 2.1GiB로 GC 힙 제한
+
+✅ .NET 6 이후는 컨테이너 메모리 리미트를 자동 인식하지만, 강제 설정 시 더 안정적
+
+✅ 나머지 30%는 네이티브 코드, 라이브러리, 스레드 스택에 사용
+
