@@ -1,0 +1,18 @@
+receivers:
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'dotnet-app'
+          static_configs:
+            - targets: ['dotnet-app:5000']  # prometheus-net 노출 endpoint
+
+exporters:
+  otlp:
+    endpoint: "aspire-host:4317"
+    protocol: grpc
+
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheus]
+      exporters: [otlp]
