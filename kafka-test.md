@@ -79,3 +79,22 @@ kafka-console-consumer.sh \
 * NodePort Service 생성 → `PLAINTEXT://nodeIP:port` 로 접속
 * LoadBalancer / Ingress Controller 활용 가능
 * 외부 PC에서 테스트 시 `kafkacat`, `kafka-console-producer/consumer` 사용 가능
+
+
+```
+curl -X POST http://localhost:9411/api/v2/spans \
+     -H "Content-Type: application/json" \
+     -d '[
+  {
+    "traceId": "1e223ff1f80f1c6d",
+    "id": "1e223ff1f80f1c6d",
+    "name": "test-span",
+    "timestamp": 1670000000000000,
+    "duration": 100000,
+    "localEndpoint": {
+      "serviceName": "curl-test"
+    }
+  }
+]'
+
+```
