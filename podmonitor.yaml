@@ -1,0 +1,87 @@
+--- sidecar
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: dapr-podmonitor
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  podMetricsEndpoints:
+  - port: http-metrics   # dapr sidecar가 노출하는 metrics 포트 이름
+    path: /metrics
+    interval: 30s
+    relabelings:
+    - action: keep
+      regex: "true"
+      sourceLabels: [__meta_kubernetes_pod_annotation_dapr_io_enabled]
+    - action: keep
+      regex: "true"
+      sourceLabels: [__meta_kubernetes_pod_annotation_dapr_io_enable_metrics]
+    - action: replace
+      replacement: ${1}
+      sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - action: replace
+      replacement: ${1}
+      sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - action: replace
+      regex: (.*);daprd
+      replacement: ${1}-dapr
+      sourceLabels:
+      - __meta_kubernetes_pod_annotation_dapr_io_app_id
+      - __meta_kubernetes_pod_container_name
+      targetLabel: service
+    - action: replace
+      replacement: ${1}:9090
+      sourceLabels: [__meta_kubernetes_pod_ip]
+      targetLabel: __address__
+
+
+
+
+
+
+
+
+---- dapr-system
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: dapr-podmonitor
+  labels:
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: dapr
+  podMetricsEndpoints:
+  - port: http-metrics
+    path: /metrics
+    interval: 30s
+    relabelings:
+    - action: keep
+      regex: dapr
+      sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+    - action: keep
+      regex: dapr
+      sourceLabels: [__meta_kubernetes_pod_label_app_kubernetes_io_part_of]
+    - action: replace
+      replacement: ${1}
+      sourceLabels: [__meta_kubernetes_pod_label_app]
+      targetLabel: app
+    - action: replace
+      replacement: ${1}
+      sourceLabels: [__meta_kubernetes_namespace]
+      targetLabel: namespace
+    - action: replace
+      replacement: ${1}
+      sourceLabels: [__meta_kubernetes_pod_name]
+      targetLabel: pod
+    - action: replace
+      replacement: ${1}:9090
+      sourceLabels: [__meta_kubernetes_pod_ip]
+      targetLabel: __address__
