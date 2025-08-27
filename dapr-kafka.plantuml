@@ -1,0 +1,27 @@
+@startuml
+actor LegacySystem as LS
+box "VM (no Docker)" #LightGray
+  participant "App" as App
+  participant "daprd (sidecar)" as Daprd
+end box
+
+participant "Kafka Cluster" as Kafka
+participant "Dapr PubSub (kafka-pubsub)" as PubSub
+participant "Consumer App1" as App1
+participant "Consumer App2" as App2
+
+== Legacy 시스템에서 데이터 발생 ==
+LS -> App : 동기 요청 (Rendezvous 통신)
+
+== App이 daprd에 전달 ==
+App -> Daprd : Dapr SDK 호출 (InvokeBinding)
+
+== daprd가 Kafka에 적재 ==
+Daprd -> Kafka : produce message (topic=legacy-data)
+
+== Kafka 메시지 소비 ==
+Kafka -> PubSub : publish event (legacy-data)
+PubSub -> App1 : POST /legacy-data-subscriber
+PubSub -> App2 : POST /legacy-data-subscriber
+
+@enduml
