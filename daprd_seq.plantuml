@@ -1,0 +1,32 @@
+@startuml
+actor User as U
+participant "Publisher App" as PUB
+
+box "Application Pod"
+  participant "App" as APP
+  participant "daprd (Sidecar)" as DAPRD
+end box
+
+box "Kafka Cluster"
+  participant "Kafka Broker" as KAFKA
+  component "Topic: orders" as TOPIC
+end box
+
+== 초기화 단계 ==
+U -> APP: Application 실행
+APP -> DAPRD: 초기화 요청
+DAPRD -> KAFKA: Consumer Group(g1)로 구독 요청
+KAFKA -> TOPIC: Consumer Group 등록
+
+== 메시지 발행 ==
+PUB -> KAFKA: 메시지 전송
+KAFKA -> TOPIC: 메시지 저장
+
+== 메시지 수신 ==
+TOPIC -> KAFKA: 메시지 제공
+KAFKA -> DAPRD: 구독된 Consumer Group(g1)에 메시지 전달
+DAPRD -> APP: 메시지 콜백 전달(HTTP/gRPC)
+
+== 메시지 처리 ==
+APP -> APP: 메시지 검증 및 처리
+@enduml
