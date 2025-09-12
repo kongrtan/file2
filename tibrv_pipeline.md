@@ -212,3 +212,22 @@ Console.WriteLine("Insert 완료!");
 - `subjects` 테이블: subject 계층 구조 저장  
 - `messages` 테이블: payload + reply 저장  
 - `Dapper` 활용하여 DB에 insert  
+
+
+```
+    static void Main()
+    {
+        string input = "AAAA.BBBB.CCC-192.168.0.1-AAA.DDD";
+
+        // ^([^.]+)\.([^.]+)\.(.+)\.([^.]+)$
+        var match = Regex.Match(input, @"^([^.]+)\.([^.]+)\.(.+)\.([^.]+)$");
+
+        if (match.Success)
+        {
+            Console.WriteLine(match.Groups[1].Value); // AAAA
+            Console.WriteLine(match.Groups[2].Value); // BBBB
+            Console.WriteLine(match.Groups[3].Value); // CCC-192.168.0.1-AAA
+            Console.WriteLine(match.Groups[4].Value); // DDD
+        }
+    }
+```
