@@ -41,6 +41,18 @@ public class TruncateFileSink : ILogEventSink, IDisposable
     public void Dispose() => _writer?.Dispose();
 }
 
+public static class LoggerConfigurationTruncateFileExtensions
+{
+    public static LoggerConfiguration TruncateFile(
+        this LoggerSinkConfiguration sinkConfiguration,
+        string path,
+        long maxSizeBytes,
+        LoggingLevelSwitch? levelSwitch = null)
+    {
+        return sinkConfiguration.Sink(new TruncateFileSink(path, maxSizeBytes), levelSwitch: levelSwitch);
+    }
+}
+
 
 
 /////
