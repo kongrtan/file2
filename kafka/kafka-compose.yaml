@@ -1,0 +1,106 @@
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.10
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    restart: always
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.10
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://192.168.56.103:9092,PLAINTEXT_INTERNAL://kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7일
+    volumes:
+      - /data/nvme/kafka:/var/lib/kafka/data
+    restart: always
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.4.10
+    container_name: schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://kafka:9093"
+    restart: always
+
+  ksqldb:
+    image: confluentinc/cp-ksqldb-server:7.4.10
+    container_name: ksqldb
+    depends_on:
+      - kafka
+      - schema-registry
+    ports:
+      - "8088:8088"
+    environment:
+      KSQL_CONFIG_DIR: "/etc/ksqldb"
+      KSQL_BOOTSTRAP_SERVERS: "PLAINTEXT://kafka:9093"
+      KSQL_LISTENERS: "http://0.0.0.0:8088"
+      KSQL_KSQL_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      KSQL_KSQL_SERVICE_ID: "ksqldb_service"
+      KSQL_KSQL_HIDDEN_TOPICS: '^_.*'
+    restart: always
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.4.10
+    container_name: kafka-connect
+    depends_on:
+      - kafka
+      - schema-registry
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kafka:9093"
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: "connect-cluster"
+      CONNECT_CONFIG_STORAGE_TOPIC: "_connect-configs"
+      CONNECT_OFFSET_STORAGE_TOPIC: "_connect-offsets"
+      CONNECT_STATUS_STORAGE_TOPIC: "_connect-status"
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_KEY_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      CONNECT_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+    restart: always
+
+  akhq:
+    image: tchiotludo/akhq:0.26.0
+    container_name: akhq
+    ports:
+      - "9080:8080"
+    environment:
+      AKHQ_CONFIGURATION: |
+        akhq:
+          connections:
+            kafka-single:
+              properties:
+                bootstrap.servers: "kafka:9093"
+              schema-registry:
+                url: "http://schema-registry:8081"
+              connect:
+                - name: "kafka-connect"
+                  url: "http://kafka-connect:8083"
+              ksqldb:
+                - name: "ksqldb-local"
+                  url: "http://ksqldb:8088"
+    depends_on:
+      - kafka
+    restart: always
