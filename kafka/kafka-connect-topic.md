@@ -12,7 +12,9 @@ kafka-topics --bootstrap-server kafka:9093 \
 
 kafka-topics --bootstrap-server kafka:9093 \
   --delete --topic _connect-status
+```
 
+```
 # 새로 생성 (cleanup.policy=compact)
 kafka-topics --bootstrap-server kafka:9093 \
   --create --topic _connect-configs \
