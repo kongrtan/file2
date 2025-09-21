@@ -32,3 +32,25 @@ kafka-topics --bootstrap-server kafka:9093 \
   --config cleanup.policy=compact
 
 ```
+
+```
+docker exec -it ksqldb-cli ksql http://ksqldb:8088
+
+```
+
+```
+CREATE STREAM KW_REAL_DATA (
+    stockCd STRING,
+    hhmmss STRING,
+    currPrc BIGINT,
+    accStockVol BIGINT,
+    regDt STRING,
+    exCd STRING
+) WITH (
+    KAFKA_TOPIC = 'kw-real-data-topic',
+    VALUE_FORMAT = 'JSON',
+    KEY_FORMAT = 'KAFKA',
+    PARTITIONS = 1
+);
+
+```
