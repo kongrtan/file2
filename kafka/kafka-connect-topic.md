@@ -54,3 +54,11 @@ CREATE STREAM KW_REAL_DATA (
 );
 
 ```
+
+### 스트림 생성 후 메시지
+```
+ Message
+----------------
+ Stream created
+----------------
+```
