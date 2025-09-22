@@ -304,3 +304,23 @@ spec:
                       ksqldb:
                         - name: "ksqldb-local"
                           url: "http://ksqldb:8088"
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ksqldb-cli
+  namespace: bbbb
+  labels:
+    app: ksqldb-cli
+spec:
+  containers:
+    - name: ksqldb-cli
+      image: confluentinc/ksqldb-cli:0.29.0
+      command: ["/bin/sh"]
+      tty: true
+      stdin: true
+      env:
+        - name: KSQL_BOOTSTRAP_SERVERS
+          value: "kafka:9092"
+  restartPolicy: Never
