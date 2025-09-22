@@ -47,7 +47,7 @@ CREATE STREAM KW_REAL_DATA (
     regDt STRING,
     exCd STRING
 ) WITH (
-    KAFKA_TOPIC = 'kw-real-data-topic',
+    KAFKA_TOPIC = 'kw-real-data',
     VALUE_FORMAT = 'JSON',
     KEY_FORMAT = 'KAFKA',
     PARTITIONS = 1
@@ -73,5 +73,5 @@ SELECT stockCd,
 FROM KW_REAL_DATA
 WINDOW HOPPING (SIZE 1 MINUTE, ADVANCE BY 1 SECOND)
 GROUP BY stockCd
-HAVING COUNT(*) >= 200;
+HAVING COUNT(*) >= 1000;
 ```
