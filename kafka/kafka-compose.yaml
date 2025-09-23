@@ -108,3 +108,24 @@ services:
     depends_on:
       - kafka
     restart: always
+
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:7.4.10
+    container_name: control-center
+    depends_on:
+      - zookeeper
+      - kafka
+      - schema-registry
+      - kafka-connect
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: "kafka:9093"
+      CONTROL_CENTER_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      CONTROL_CENTER_CONNECT_CLUSTER: "http://kafka-connect:8083"
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_REPLICATION: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_STREAMS_NUM_STREAM_THREADS: 1
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+    restart: always
