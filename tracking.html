@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>쇼핑몰 이벤트 트래킹</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 50px; }
+    button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<h1>쇼핑몰 페이지</h1>
+<p>상품: <strong>제품 123</strong></p>
+<button id="add-to-cart-btn">장바구니 담기</button>
+<button id="purchase-btn">구매하기</button>
+
+<script>
+/* ======= FE 이벤트 SDK ======= */
+(function(window) {
+  const EventSDK = {
+    endpoint: null,
+    userId: null,
+
+    init: function(config) {
+      this.endpoint = config.endpoint;
+      this.userId = config.userId || null;
+
+      // 페이지뷰 자동 추적
+      this.trackEvent('pageview', {
+        url: window.location.href,
+        title: document.title
+      });
+
+      // 스크롤 추적 (페이지 스크롤 25%, 50%, 75%, 100%)
+      const scrollMilestones = [25, 50, 75, 100];
+      const sentMilestones = new Set();
+      window.addEventListener('scroll', () => {
+        const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        const docHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+        const scrollPercent = Math.floor((scrollTop / docHeight) * 100);
+        scrollMilestones.forEach(percent => {
+          if (scrollPercent >= percent && !sentMilestones.has(percent)) {
+            sentMilestones.add(percent);
+            this.trackEvent('scroll', { percent: percent });
+          }
+        });
+      });
+    },
+
+    trackEvent: function(eventName, properties = {}) {
+      const eventData = {
+        event: eventName,
+        timestamp: new Date().toISOString(),
+        user_id: this.userId,
+        properties: properties
+      };
+
+      fetch(this.endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData)
+      }).catch(err => {
+        console.error('Event send failed:', err);
+      });
+    },
+
+    setUserId: function(userId) {
+      this.userId = userId;
+    }
+  };
+
+  window.EventSDK = EventSDK;
+})(window);
+
+/* ======= SDK 사용 예시 ======= */
+EventSDK.init({
+  endpoint: 'https://your-backend.example.com/events', // REST API 엔드포인트
+  userId: 'user_001'
+});
+
+// 버튼 클릭 이벤트
+document.getElementById('add-to-cart-btn').addEventListener('click', () => {
+  EventSDK.trackEvent('add_to_cart', { productId: 'product_123', price: 25000 });
+});
+
+document.getElementById('purchase-btn').addEventListener('click', () => {
+  EventSDK.trackEvent('purchase', { productId: 'product_123', price: 25000 });
+});
+</script>
+
+</body>
+</html>
