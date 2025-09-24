@@ -175,6 +175,8 @@ namespace MyBrokerComponent
 ```csharp
 using System;
 using Grpc.Core;
+using Grpc.Reflection;
+using Grpc.Reflection.V1Alpha;
 
 namespace MyBrokerComponent
 {
@@ -189,6 +191,13 @@ namespace MyBrokerComponent
                 Services = { Dapr.Proto.Components.V1.PubSub.BindService(new MyBrokerPubSub()) },
                 Ports = { new ServerPort("0.0.0.0", Port, ServerCredentials.Insecure) }
             };
+
+            // reflection 서비스 추가
+            var reflectionServiceImpl = new ReflectionServiceImpl(
+                Dapr.Proto.Components.V1.PubSub.Descriptor,
+                ServerReflection.Descriptor
+            );
+            server.Services.Add(Grpc.Reflection.Reflection.BindService(reflectionServiceImpl));
 
             server.Start();
             Console.WriteLine($"[MyBrokerComponent] PubSub external component listening on {Port}");
