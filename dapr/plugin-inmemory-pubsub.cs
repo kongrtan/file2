@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapr.PluggableComponents;
@@ -34,13 +33,13 @@ public class InMemoryPubSub : IPubSub
     {
         return Task.Run(async () =>
         {
-            var queue = _topics.GetOrAdd(topic.Topic, _ => new ConcurrentQueue<PubSubPublishRequest>());
+            var queue = _topics.GetOrAdd(topic.Name, _ => new ConcurrentQueue<PubSubPublishRequest>());
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 while (queue.TryDequeue(out var msg))
                 {
-                    var response = new PubSubPullMessagesResponse(topic.Topic)
+                    var response = new PubSubPullMessagesResponse(topic.Name)
                     {
                         Data = msg.Data,
                         ContentType = msg.ContentType
@@ -51,9 +50,9 @@ public class InMemoryPubSub : IPubSub
                         async (errorMessage) =>
                         {
                             if (string.IsNullOrEmpty(errorMessage))
-                                Console.WriteLine($"[Ack] {topic.Topic}");
+                                Console.WriteLine($"[Ack] {topic.Name}");
                             else
-                                Console.WriteLine($"[Nack] {topic.Topic}, error={errorMessage}");
+                                Console.WriteLine($"[Nack] {topic.Name}, error={errorMessage}");
 
                             await Task.CompletedTask;
                         });
