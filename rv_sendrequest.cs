@@ -54,4 +54,35 @@ namespace MyApp.Controllers
         public string OrderId { get; set; }
         public int Amount { get; set; }
     }
+
+       [HttpPost("send")]
+    public IActionResult SendMessage([FromBody] MyRequest dto)
+    {
+        // Queue 및 Listener는 요청마다 새로 생성 가능
+        Queue queue = new Queue();
+        string inbox = _transport.CreateInbox();
+        Message responseMsg = null;
+
+        Listener listener = new Listener(queue, _transport, inbox, null);
+        listener.OnMessage += (msg) => { responseMsg = msg; };
+
+        Message req = new Message();
+        req.SendSubject = "service.test";
+        req.ReplySubject = inbox;
+        req.UpdateString("data", dto.Data);
+
+        _transport.Send(req);
+
+        DateTime start = DateTime.Now;
+        while ((DateTime.Now - start).TotalMilliseconds < 3000)
+        {
+            if (queue.TimedDispatch(200) && responseMsg != null)
+                return Ok(new { reply = responseMsg.GetString("reply") });
+        }
+
+        return StatusCode(504, "RV response timeout");
+    }
+}
+
+public record MyRequest(string Data);
 }
